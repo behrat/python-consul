@@ -153,6 +153,13 @@ class TestConsul(object):
         index, data = c.kv.get('base/', keys=True, separator='/')
         assert data == ['base/base/', 'base/foo']
 
+    def test_txn(self, consul_port):
+        c = consul.Consul(port=consul_port)
+        
+        # TODO
+
+
+
     def test_event(self, consul_port):
         c = consul.Consul(port=consul_port)
 

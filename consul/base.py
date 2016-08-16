@@ -166,6 +166,7 @@ class CB(object):
             one=False,
             decode=False,
             is_id=False,
+            results=False,
             index=False):
         """
         *map* is a function to apply to the final result.
@@ -181,6 +182,8 @@ class CB(object):
         *decode* if specified this key will be base64 decoded.
 
         *is_id* only the 'ID' field of the json object will be returned.
+
+        *results* if only the "Results" field of the json object will be returned
         """
         def cb(response):
             CB.__status(response, allow_404=allow_404)
@@ -202,6 +205,11 @@ class CB(object):
                     data = data[0]
             if map:
                 data = map(data)
+            if results:
+            #     TODO: 
+            #    if "Errors" in data:
+            #        raise ConsulError(data["Errors"])
+                data = data["Results"]
             if index:
                 return response.headers['X-Consul-Index'], data
             return data
@@ -255,6 +263,7 @@ class Consul(object):
 
         self.event = Consul.Event(self)
         self.kv = Consul.KV(self)
+        self.txn = Consul.TXN(self)
         self.agent = Consul.Agent(self)
         self.catalog = Consul.Catalog(self)
         self.health = Consul.Health(self)
@@ -1676,6 +1685,42 @@ class Consul(object):
                 CB.json(one=True, allow_404=False),
                 '/v1/session/renew/%s' % session_id,
                 params=params)
+
+    class TXN(object):
+        def __init__(self, agent):
+            self.agent = agent
+
+        def submit(self,
+                payload,
+                wait=None,
+                token=None,
+                dc=None):
+            """
+            Submits a list of operations to apply to the key/value store
+            inside a transaction.
+
+            *payload*
+
+            *wait*
+
+            *token*
+
+            *dc*
+
+            For more information about transactions
+            https://www.consul.io/docs/agent/http/kv.html#txn
+            """
+            params = {}
+            if token:
+                params['token'] = token
+            dc = dc or self.agent.dc
+            if dc:
+                params['dc'] = dc
+
+            return self.agent.http.put(
+                CB.json(index=False, allow_404=False), '/v1/txn',
+                params=params,
+                data=json.dumps(payload))
 
     class ACL(object):
         def __init__(self, agent):
